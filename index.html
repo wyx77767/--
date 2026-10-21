@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<!-- ============================================================
+  WYX · 个人数字名片
+  Vibe Coding 任务链产物：需求对齐 → 代码生成 → 云端部署 → 迭代优化
+  【如何修改】页面底部 <script> 顶部有 CFG 配置块：
+  邮箱 / GitHub / 微信号 / 各项目链接，改那里即可全站生效。
+============================================================ -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WYX · 数字名片 | Digital Identity Card</title>
+<meta name="description" content="wyx · 数字经济专业学生的个人数字名片 — 简介技能 / 项目作品 / 联系方式">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23C8F542'/%3E%3Ctext x='32' y='44' font-family='monospace' font-size='34' font-weight='bold' text-anchor='middle' fill='%2307090C'%3EW%3C/text%3E%3C/svg%3E">
+
+<!-- 字体（jsdelivr CDN，国内可访问；加载失败时自动回退系统字体） -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/unbounded@5/500.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/unbounded@5/800.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5/500.css">
+
+<style>
+/* ============ 基础变量 ============ */
+:root{
+  --bg:      #07090C;
+  --bg2:     #0C1016;
+  --panel:   #0E131A;
+  --line:    rgba(255,255,255,.08);
+  --txt:     #E9EEF4;
+  --mut:     #8A95A3;
+  --acc:     #C8F542;               /* 酸性荧光绿 — 全站唯一强调色 */
+  --acc-dim: rgba(200,245,66,.12);
+  --font-d:  'Unbounded','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+  --font-m:  'JetBrains Mono',Consolas,'Courier New',monospace;
+  --font-b:  'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--txt);
+  font-family:var(--font-b);font-size:16px;line-height:1.75;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--acc);color:#07090C}
+::-webkit-scrollbar{width:10px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:#232B36;border-radius:6px}
+::-webkit-scrollbar-thumb:hover{background:var(--acc)}
+a{color:inherit;text-decoration:none}
+img{max-width:100%}
+
+/* ============ 氛围层：网格 / 光晕 / 噪点 ============ */
+.fx-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(200,245,66,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(200,245,66,.045) 1px,transparent 1px);
+  background-size:56px 56px;
+  mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,#000 25%,transparent 78%);
+  -webkit-mask-image:radial-gradient(ellipse 90% 70% at 50% 0%,#000 25%,transparent 78%);
+}
+.fx-glow{position:fixed;z-index:0;pointer-events:none;border-radius:50%;filter:blur(120px)}
+.fx-glow.g1{width:560px;height:560px;top:-180px;right:-140px;background:rgba(200,245,66,.07)}
+.fx-glow.g2{width:480px;height:480px;bottom:-200px;left:-160px;background:rgba(70,140,255,.06)}
+.fx-noise{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============ 启动画面 ============ */
+#boot{position:fixed;inset:0;z-index:100;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  transition:clip-path .65s cubic-bezier(.7,0,.3,1);clip-path:inset(0 0 0 0)}
+#boot.done{clip-path:inset(0 0 100% 0)}
+#boot pre{font-family:var(--font-m);font-size:clamp(.72rem,2vw,.9rem);color:var(--acc);
+  line-height:2.1;white-space:pre-wrap}
+#boot .cur{display:inline-block;width:.6em;height:1.1em;background:var(--acc);
+  vertical-align:-2px;animation:blink .7s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ============ 自定义光标（仅精确指针设备） ============ */
+#cur,#curR{position:fixed;top:0;left:0;z-index:90;pointer-events:none;border-radius:50%;
+  transform:translate(-50%,-50%);display:none}
+#cur{width:8px;height:8px;background:var(--acc)}
+#curR{width:36px;height:36px;border:1px solid rgba(200,245,66,.55);
+  transition:width .25s,height .25s,border-color .25s}
+#curR.big{width:64px;height:64px;border-color:var(--acc)}
+@media(pointer:fine){
+  #cur,#curR{display:block}
+  body{cursor:none}
+  a,button,[data-hover]{cursor:none}
+}
+
+/* ============ 滚动进度条 ============ */
+#prog{position:fixed;top:0;left:0;height:2px;width:0;background:var(--acc);z-index:80}
+
+/* ============ 导航 ============ */
+nav{position:fixed;top:0;left:0;right:0;z-index:70;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.9rem clamp(1.2rem,4vw,3rem);
+  background:rgba(7,9,12,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line)}
+.logo{font-family:var(--font-m);font-weight:500;font-size:.95rem;letter-spacing:.06em}
+.logo b{color:var(--acc);font-weight:500}
+.nav-links{display:flex;gap:clamp(1rem,3vw,2.2rem);font-family:var(--font-m);font-size:.78rem}
+.nav-links a{color:var(--mut);letter-spacing:.08em;transition:color .25s;position:relative}
+.nav-links a i{color:var(--acc);font-style:normal;margin-right:.35em;font-size:.68rem}
+.nav-links a:hover{color:var(--txt)}
+#clk{font-family:var(--font-m);font-size:.78rem;color:var(--acc);letter-spacing:.1em}
+@media(max-width:720px){.nav-links{display:none}}
+
+/* ============ 布局容器 ============ */
+.wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;
+  padding:0 clamp(1.2rem,4vw,3rem)}
+section{padding:clamp(4.5rem,10vh,7.5rem) 0}
+
+/* ============ Hero ============ */
+#hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+  padding-top:6rem;position:relative}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(2rem,5vw,4rem);align-items:center}
+.tag-line{font-family:var(--font-m);font-size:.78rem;color:var(--acc);letter-spacing:.14em;
+  margin-bottom:1.6rem;display:flex;align-items:center;gap:.7rem}
+.tag-line::before{content:"";width:34px;height:1px;background:var(--acc)}
+.hero-name{font-family:var(--font-d);font-weight:800;
+  font-size:clamp(4.2rem,13vw,10.5rem);line-height:.95;letter-spacing:.01em;
+  position:relative;margin-left:-.06em}
+.hero-name .ghost{position:absolute;inset:0;color:transparent;
+  -webkit-text-stroke:1px rgba(200,245,66,.35);transform:translate(.045em,.045em);z-index:-1}
+.hero-name .dot{color:var(--acc)}
+.hero-role{margin-top:1.4rem;font-size:clamp(1.05rem,2.4vw,1.5rem);font-weight:600;letter-spacing:.05em}
+.hero-role span{color:var(--acc)}
+.hero-desc{margin-top:1.1rem;color:var(--mut);max-width:34em;font-size:.95rem}
+.hero-cta{margin-top:2.2rem;display:flex;gap:1rem;flex-wrap:wrap}
+.btn{font-family:var(--font-m);font-size:.82rem;letter-spacing:.1em;
+  padding:.85rem 1.7rem;border:1px solid var(--acc);color:var(--acc);
+  position:relative;overflow:hidden;transition:color .3s;background:transparent}
+.btn::before{content:"";position:absolute;inset:0;background:var(--acc);
+  transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.7,0,.3,1);z-index:-1}
+.btn:hover{color:#07090C}
+.btn:hover::before{transform:scaleX(1)}
+.btn.solid{background:var(--acc);color:#07090C}
+.btn.solid::before{background:#E4FF7A}
+
+/* HUD 角标 */
+.hud{position:absolute;font-family:var(--font-m);font-size:.66rem;color:var(--mut);
+  letter-spacing:.12em;display:flex;align-items:center;gap:.5rem}
+.hud em{font-style:normal;color:var(--acc)}
+.hud.tl{top:5.4rem;left:clamp(1.2rem,4vw,3rem)}
+.hud.tr{top:5.4rem;right:clamp(1.2rem,4vw,3rem)}
+.hud .pulse{width:7px;height:7px;border-radius:50%;background:var(--acc);
+  animation:pl 1.8s ease-in-out infinite}
+@keyframes pl{50%{opacity:.25;transform:scale(.7)}}
+@media(max-width:720px){.hud.tr{display:none}}
+
+/* ============ 数字名片卡片（3D 悬浮） ============ */
+.card-stage{perspective:1200px;display:flex;justify-content:center}
+.id-card{width:min(400px,88vw);aspect-ratio:1.586;position:relative;
+  border-radius:18px;transform-style:preserve-3d;
+  transition:transform .18s ease-out;
+  background:linear-gradient(135deg,#12161D 0%,#0B0F14 55%,#10140F 100%);
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 1px rgba(200,245,66,.06),
+    0 0 60px rgba(200,245,66,.05);
+  animation:floaty 5.5s ease-in-out infinite}
+@keyframes floaty{50%{translate:0 -10px}}
+.id-card .sheen{position:absolute;inset:0;border-radius:18px;pointer-events:none;
+  background:radial-gradient(420px circle at var(--mx,70%) var(--my,20%),
+    rgba(200,245,66,.16),transparent 55%);
+  mix-blend-mode:screen}
+.id-card .holo{position:absolute;inset:0;border-radius:18px;pointer-events:none;opacity:.5;
+  background:conic-gradient(from 210deg at 70% 25%,transparent 60%,rgba(200,245,66,.08) 72%,transparent 84%)}
+.card-in{position:absolute;inset:0;padding:1.35rem 1.5rem;display:flex;flex-direction:column;
+  transform:translateZ(30px)}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start}
+.chip{width:44px;height:33px;border-radius:6px;
+  background:linear-gradient(135deg,#D9E66B,#9DB62E);
+  position:relative;overflow:hidden}
+.chip::before{content:"";position:absolute;inset:5px 7px;border:1px solid rgba(7,9,12,.5);border-radius:3px}
+.card-brand{font-family:var(--font-m);font-size:.62rem;color:var(--mut);
+  text-align:right;letter-spacing:.16em;line-height:1.7}
+.card-brand b{color:var(--acc);font-weight:500}
+.card-mid{margin-top:auto}
+.card-label{font-family:var(--font-m);font-size:.58rem;color:var(--mut);letter-spacing:.22em}
+.card-name{font-family:var(--font-d);font-weight:800;font-size:2rem;letter-spacing:.04em;line-height:1.15}
+.card-role{font-size:.82rem;color:var(--acc);letter-spacing:.12em;margin-top:.2rem;font-weight:600}
+.card-bottom{margin-top:1.1rem;display:flex;justify-content:space-between;align-items:flex-end;gap:1rem}
+.card-no{font-family:var(--font-m);font-size:.7rem;color:var(--txt);letter-spacing:.18em}
+.card-no small{display:block;color:var(--mut);font-size:.55rem;letter-spacing:.2em;margin-bottom:.25rem}
+.barcode{width:96px;height:30px;
+  background:repeating-linear-gradient(90deg,
+    var(--txt) 0 2px,transparent 2px 5px,
+    var(--txt) 5px 6px,transparent 6px 11px,
+    var(--txt) 11px 14px,transparent 14px 17px,
+    var(--txt) 17px 18px,transparent 18px 22px)}
+.qr{width:34px;height:34px;background:#E9EEF4;border-radius:4px;padding:4px}
+.qr i{display:block;width:100%;height:100%;
+  background:repeating-conic-gradient(#0B0F14 0% 25%,transparent 0% 50%) 0 0/10px 10px}
+
+/* ============ 跑马灯 ============ */
+.mq{border-block:1px solid var(--line);overflow:hidden;background:var(--bg2)}
+.mq-in{display:flex;width:max-content;animation:mq 26s linear infinite}
+.mq-in span{font-family:var(--font-m);font-size:.8rem;letter-spacing:.22em;
+  color:var(--mut);padding:.9rem 0;white-space:nowrap}
+.mq-in span b{color:var(--acc);font-weight:500;margin:0 1.4rem}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+/* ============ 区块标题 ============ */
+.sec-h{display:flex;align-items:baseline;gap:1.2rem;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);padding-bottom:1.1rem;margin-bottom:3rem}
+.sec-h .no{font-family:var(--font-d);font-weight:800;font-size:1rem;color:var(--acc)}
+.sec-h h2{font-family:var(--font-d);font-weight:800;font-size:clamp(1.6rem,4vw,2.6rem);
+  letter-spacing:.02em}
+.sec-h .lbl{margin-left:auto;font-family:var(--font-m);font-size:.7rem;
+  color:var(--mut);letter-spacing:.18em}
+
+/* ============ 简介 ============ */
+.about-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:clamp(2rem,5vw,4rem)}
+.about-txt p{color:var(--mut);margin-bottom:1.2rem;font-size:.98rem}
+.about-txt p b{color:var(--txt);font-weight:600}
+.about-txt .hl{color:var(--acc)}
+.stats{display:flex;flex-direction:column;gap:1rem}
+.stat{border:1px solid var(--line);background:var(--panel);padding:1.3rem 1.5rem;
+  display:flex;align-items:baseline;justify-content:space-between;gap:1rem;
+  transition:border-color .3s,transform .3s}
+.stat:hover{border-color:rgba(200,245,66,.4);transform:translateX(6px)}
+.stat .num{font-family:var(--font-d);font-weight:800;font-size:2.2rem;color:var(--acc)}
+.stat .cap{font-family:var(--font-m);font-size:.72rem;color:var(--mut);letter-spacing:.14em;text-align:right}
+
+/* ============ 技能终端 ============ */
+.term{border:1px solid var(--line);background:var(--panel);border-radius:12px;overflow:hidden}
+.term-h{display:flex;align-items:center;gap:.5rem;padding:.8rem 1.2rem;
+  border-bottom:1px solid var(--line);background:var(--bg2)}
+.term-h i{width:11px;height:11px;border-radius:50%;background:#2A3340}
+.term-h i:first-child{background:var(--acc)}
+.term-h span{margin-left:auto;font-family:var(--font-m);font-size:.66rem;color:var(--mut);letter-spacing:.14em}
+.term-b{padding:1.6rem clamp(1.2rem,3vw,2rem);font-family:var(--font-m)}
+.sk{display:grid;grid-template-columns:minmax(0,15em) 1fr 3.2em;gap:1rem;align-items:center;
+  padding:.62rem 0;font-size:.82rem}
+.sk .nm{color:var(--txt);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sk .nm::before{content:"> ";color:var(--acc)}
+.sk .pc{color:var(--acc);text-align:right}
+.bar{height:8px;background:#1A212B;border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:4px;
+  background:linear-gradient(90deg,#7A9C22,var(--acc));
+  transition:width 1.1s cubic-bezier(.2,.7,.2,1) var(--d,0s)}
+.term.on .bar i{width:var(--w)}
+@media(max-width:640px){.sk{grid-template-columns:1fr;gap:.35rem}.sk .pc{text-align:left}}
+
+/* ============ 项目作品 ============ */
+.work{display:grid;grid-template-columns:5.5rem 1fr auto 3rem;gap:clamp(1rem,3vw,2rem);
+  align-items:center;padding:1.6rem clamp(.8rem,2vw,1.6rem);
+  border-bottom:1px solid var(--line);position:relative;
+  transition:background .3s,color .3s}
+.works .work:first-child{border-top:1px solid var(--line)}
+.work .idx{font-family:var(--font-d);font-weight:800;font-size:1.5rem;color:var(--mut);
+  transition:color .3s}
+.work h3{font-family:var(--font-d);font-weight:800;font-size:clamp(1.1rem,2.6vw,1.5rem);
+  letter-spacing:.02em;transition:color .3s}
+.work .desc{color:var(--mut);font-size:.85rem;margin-top:.3rem;transition:color .3s}
+.work .tags{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem}
+.work .tags i{font-style:normal;font-family:var(--font-m);font-size:.62rem;
+  letter-spacing:.08em;color:var(--acc);border:1px solid rgba(200,245,66,.35);
+  padding:.18rem .55rem;border-radius:99px;transition:all .3s}
+.work .st{font-family:var(--font-m);font-size:.62rem;letter-spacing:.12em;
+  padding:.3rem .7rem;border-radius:99px;border:1px solid var(--line);color:var(--mut);
+  white-space:nowrap;transition:all .3s}
+.work .st.on{color:#07090C;background:var(--acc);border-color:var(--acc)}
+.work .arr{font-size:1.5rem;color:var(--mut);text-align:right;
+  transition:transform .3s,color .3s}
+.work:hover{background:var(--acc)}
+.work:hover .idx,.work:hover h3{color:#07090C}
+.work:hover .desc{color:rgba(7,9,12,.7)}
+.work:hover .arr{color:#07090C;transform:translateX(6px) rotate(-45deg)}
+.work:hover .tags i{color:#07090C;border-color:rgba(7,9,12,.4)}
+.work:hover .st{border-color:rgba(7,9,12,.4);color:#07090C}
+.work:hover .st.on{background:#07090C;color:var(--acc)}
+.work.na{pointer-events:none}
+.work.na .arr{transform:none}
+@media(max-width:760px){
+  .work{grid-template-columns:3rem 1fr 2rem}
+  .work .st{display:none}
+}
+
+/* ============ 联系方式 ============ */
+#contact .big{font-family:var(--font-d);font-weight:800;
+  font-size:clamp(2rem,7vw,4.6rem);line-height:1.12;letter-spacing:.02em}
+#contact .big span{color:var(--acc)}
+.contact-rows{margin-top:3rem;border-top:1px solid var(--line)}
+.c-row{display:grid;grid-template-columns:9rem 1fr auto;gap:1.2rem;align-items:center;
+  padding:1.4rem .4rem;border-bottom:1px solid var(--line);transition:background .3s}
+.c-row:hover{background:var(--acc-dim)}
+.c-row .k{font-family:var(--font-m);font-size:.7rem;color:var(--mut);letter-spacing:.2em}
+.c-row .v{font-family:var(--font-m);font-size:clamp(.9rem,2.4vw,1.25rem);
+  letter-spacing:.05em;word-break:break-all}
+.c-row .act{font-family:var(--font-m);font-size:.68rem;color:var(--acc);
+  border:1px solid rgba(200,245,66,.4);padding:.42rem .9rem;border-radius:99px;
+  letter-spacing:.12em;background:transparent;transition:all .3s;white-space:nowrap}
+.c-row .act:hover{background:var(--acc);color:#07090C}
+@media(max-width:640px){.c-row{grid-template-columns:1fr;gap:.4rem}}
+
+/* ============ 页脚 ============ */
+footer{border-top:1px solid var(--line);padding:2rem 0 2.6rem;
+  font-family:var(--font-m);font-size:.68rem;color:var(--mut);letter-spacing:.12em}
+.foot-in{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+footer b{color:var(--acc);font-weight:500}
+
+/* ============ 滚动显现 ============ */
+.rv{opacity:0;transform:translateY(28px);
+  transition:opacity .7s ease var(--d,0s),transform .7s cubic-bezier(.2,.7,.2,1) var(--d,0s)}
+.rv.on{opacity:1;transform:none}
+
+@media(max-width:900px){
+  .hero-grid{grid-template-columns:1fr;gap:3rem}
+  .card-stage{order:-1}
+  .about-grid{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  #boot{display:none}
+  .rv{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<!-- 启动画面 -->
+<div id="boot"><pre id="bootTxt"></pre></div>
+
+<!-- 氛围层 -->
+<div class="fx-grid"></div>
+<div class="fx-glow g1"></div>
+<div class="fx-glow g2"></div>
+<div class="fx-noise"></div>
+<div id="prog"></div>
+<div id="cur"></div><div id="curR"></div>
+
+<!-- 导航 -->
+<nav>
+  <a class="logo" href="#hero" data-hover><b>WYX://</b>数字名片</a>
+  <div class="nav-links">
+    <a href="#about" data-hover><i>01</i>简介</a>
+    <a href="#skills" data-hover><i>02</i>技能</a>
+    <a href="#works" data-hover><i>03</i>作品</a>
+    <a href="#contact" data-hover><i>04</i>联系</a>
+  </div>
+  <div id="clk">00:00:00</div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section id="hero">
+  <div class="hud tl"><span class="pulse"></span>STATUS: <em>ONLINE</em></div>
+  <div class="hud tr">VER 1.0.0 · <em>SHANGHAI</em> · 121.47E / 31.23N</div>
+
+  <div class="wrap hero-grid">
+    <div>
+      <div class="tag-line">// DIGITAL IDENTITY CARD</div>
+      <h1 class="hero-name">WYX<span class="dot">.</span>
+        <span class="ghost" aria-hidden="true">WYX.</span>
+      </h1>
+      <div class="hero-role">数字经济专业学生 <span>/</span> Vibe Coding 实践者</div>
+      <p class="hero-desc">用自然语言驱动代码，把想法变成真实可用的产品 —— 从需求对齐、代码生成，到云端部署与迭代优化。这张名片本身，就是这条任务链的产物。</p>
+      <div class="hero-cta">
+        <a class="btn solid" href="#works" data-hover>查看作品 ↓</a>
+        <a class="btn" href="#contact" data-hover>建立联系 →</a>
+      </div>
+    </div>
+
+    <!-- 3D 数字名片 -->
+    <div class="card-stage">
+      <div class="id-card" id="idCard" data-hover>
+        <div class="sheen"></div><div class="holo"></div>
+        <div class="card-in">
+          <div class="card-top">
+            <div class="chip"></div>
+            <div class="card-brand">DIGITAL IDENTITY<br><b>WYX.CARD</b></div>
+          </div>
+          <div class="card-mid">
+            <div class="card-label">CARD HOLDER / 持卡人</div>
+            <div class="card-name">WYX</div>
+            <div class="card-role">数字经济专业 · DIGITAL ECONOMY</div>
+          </div>
+          <div class="card-bottom">
+            <div class="card-no"><small>ID NO.</small>2026-WYX-001</div>
+            <div class="barcode"></div>
+            <div class="qr"><i></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 跑马灯 -->
+<div class="mq"><div class="mq-in" id="mqIn">
+  <span>数字经济<b>◆</b>VIBE CODING<b>◆</b>数据分析<b>◆</b>产品设计<b>◆</b>前端开发<b>◆</b>云端部署<b>◆</b>持续迭代<b>◆</b></span>
+  <span>数字经济<b>◆</b>VIBE CODING<b>◆</b>数据分析<b>◆</b>产品设计<b>◆</b>前端开发<b>◆</b>云端部署<b>◆</b>持续迭代<b>◆</b></span>
+</div></div>
+
+<!-- ============ 01 简介 ============ -->
+<section id="about">
+  <div class="wrap">
+    <div class="sec-h rv">
+      <span class="no">01</span><h2>简介</h2><span class="lbl">// ABOUT_ME</span>
+    </div>
+    <div class="about-grid">
+      <div class="about-txt">
+        <p class="rv">我是 <b>wyx</b>，一名数字经济专业学生。比起纸上谈兵，我更喜欢把课堂里的经济学思维与数据方法，做成一个个<span class="hl">真实可访问</span>的网站与工具。</p>
+        <p class="rv" style="--d:.1s">目前我正在实践「自然语言驱动编程」的完整任务链：用自然语言<span class="hl">对齐需求</span>、<span class="hl">生成代码</span>、<span class="hl">部署上云</span>，再基于真实反馈<span class="hl">持续迭代</span> —— 需求、代码、上线、优化，每一环都亲手跑通。</p>
+        <p class="rv" style="--d:.2s">我相信：数字经济的核心不只是理解数据，更是<b>用最低成本把想法验证为产品</b>的能力。</p>
+      </div>
+      <div class="stats">
+        <div class="stat rv" style="--d:.05s"><span class="num" data-count="4">0</span><span class="cap">个亲手交付的<br>项目作品</span></div>
+        <div class="stat rv" style="--d:.15s"><span class="num" data-count="2">0</span><span class="cap">个已云端部署的<br>在线站点</span></div>
+        <div class="stat rv" style="--d:.25s"><span class="num" data-count="100">0</span><span class="cap">% 动手实践<br>从想法到上线</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02 技能 ============ -->
+<section id="skills">
+  <div class="wrap">
+    <div class="sec-h rv">
+      <span class="no">02</span><h2>技能</h2><span class="lbl">// SKILL_MODULES</span>
+    </div>
+    <div class="term rv" id="term">
+      <div class="term-h"><i></i><i></i><i></i><span>wyx@digital-economy: ~/skills</span></div>
+      <div class="term-b">
+        <div class="sk" style="--d:0s"><span class="nm">Vibe Coding · AI 协作开发</span><span class="bar"><i style="--w:90%"></i></span><span class="pc">90%</span></div>
+        <div class="sk" style="--d:.08s"><span class="nm">HTML / CSS / JS 前端开发</span><span class="bar"><i style="--w:85%"></i></span><span class="pc">85%</span></div>
+        <div class="sk" style="--d:.16s"><span class="nm">产品需求拆解与原型设计</span><span class="bar"><i style="--w:85%"></i></span><span class="pc">85%</span></div>
+        <div class="sk" style="--d:.24s"><span class="nm">Python 数据分析</span><span class="bar"><i style="--w:80%"></i></span><span class="pc">80%</span></div>
+        <div class="sk" style="--d:.32s"><span class="nm">SQL 数据库查询</span><span class="bar"><i style="--w:75%"></i></span><span class="pc">75%</span></div>
+        <div class="sk" style="--d:.4s"><span class="nm">Supabase 云服务与部署</span><span class="bar"><i style="--w:70%"></i></span><span class="pc">70%</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03 项目作品 ============ -->
+<section id="works">
+  <div class="wrap">
+    <div class="sec-h rv">
+      <span class="no">03</span><h2>项目作品</h2><span class="lbl">// SELECTED_WORKS</span>
+    </div>
+    <div class="works">
+      <a class="work rv" data-link="wall" data-hover>
+        <span class="idx">01</span>
+        <span>
+          <h3>树洞留言墙</h3>
+          <span class="desc">匿名留言发布平台 — 敏感词过滤 / XSS 防护 / 分页加载 + 15 秒增量刷新</span>
+          <span class="tags"><i>Supabase</i><i>REST API</i><i>单文件部署</i></span>
+        </span>
+        <span class="st" data-st>本地</span>
+        <span class="arr">→</span>
+      </a>
+      <a class="work rv" style="--d:.08s" data-link="game" data-hover>
+        <span class="idx">02</span>
+        <span>
+          <h3>梦梦消消乐</h3>
+          <span class="desc">闯关消除游戏 — 步数限制 / 安慰页机制 / 云端排行榜同步</span>
+          <span class="tags"><i>JavaScript</i><i>Supabase</i><i>localStorage</i></span>
+        </span>
+        <span class="st" data-st>本地</span>
+        <span class="arr">→</span>
+      </a>
+      <a class="work rv" style="--d:.16s" data-link="pf" data-hover>
+        <span class="idx">03</span>
+        <span>
+          <h3>个人作品集网站</h3>
+          <span class="desc">课程考核作品集 — 项目成果 / 过程证据 / 版本迭代记录</span>
+          <span class="tags"><i>HTML</i><i>响应式</i><i>内容架构</i></span>
+        </span>
+        <span class="st" data-st>本地</span>
+        <span class="arr">→</span>
+      </a>
+      <a class="work rv" style="--d:.24s" data-link="pet" data-hover>
+        <span class="idx">04</span>
+        <span>
+          <h3>JJED 萨摩耶桌宠</h3>
+          <span class="desc">桌面宠物应用 — 四状态切换 / 点击对话 / 学习工作休息提醒</span>
+          <span class="tags"><i>Python</i><i>桌面应用</i><i>交互设计</i></span>
+        </span>
+        <span class="st" data-st>本地</span>
+        <span class="arr">→</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 联系方式 ============ -->
+<section id="contact">
+  <div class="wrap">
+    <div class="sec-h rv">
+      <span class="no">04</span><h2>联系</h2><span class="lbl">// GET_IN_TOUCH</span>
+    </div>
+    <div class="big rv">有想法想聊聊？<br><span>建立连接 →</span></div>
+    <div class="contact-rows">
+      <div class="c-row rv">
+        <span class="k">EMAIL</span>
+        <span class="v" id="vEmail">—</span>
+        <button class="act" id="cpEmail" data-hover>复制</button>
+      </div>
+      <a class="c-row rv" style="--d:.08s" id="vGhRow" data-hover target="_blank" rel="noopener">
+        <span class="k">GITHUB</span>
+        <span class="v" id="vGh">—</span>
+        <span class="act">访问 →</span>
+      </a>
+      <div class="c-row rv" style="--d:.16s">
+        <span class="k">WECHAT</span>
+        <span class="v" id="vWx">—</span>
+        <button class="act" id="cpWx" data-hover>复制</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 页脚 -->
+<footer>
+  <div class="wrap foot-in">
+    <span>© 2026 <b>WYX</b> · 数字经济专业</span>
+    <span>DESIGNED &amp; BUILT WITH <b>VIBE CODING</b></span>
+    <span>需求对齐 → 代码生成 → 云端部署 → 迭代优化</span>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   ★ CFG 配置块 —— 改这里即可更新全站信息
+   把邮箱、GitHub、微信号换成你自己的；
+   项目上线后把对应链接填进 links，卡片会自动变为可点击并显示「在线」。
+============================================================ */
+const CFG = {
+  email : "wyx@example.com",          // ← 换成你的邮箱
+  github: "https://github.com/wyx",   // ← 换成你的 GitHub 主页
+  wechat: "wyx_wechat",               // ← 换成你的微信号
+  links : {
+    wall: "",                          // 树洞留言墙 上线后填 URL
+    game: "https://77767.mindock.ai/SQFEmk",  // 梦梦消消乐
+    pf  : "",                          // 个人作品集 上线后填 URL
+    pet : ""                           // JJED 桌宠（桌面应用，留空即可）
+  }
+};
+
+/* ---------- 应用配置 ---------- */
+document.getElementById('vEmail').textContent = CFG.email;
+document.getElementById('vWx').textContent = CFG.wechat;
+const ghRow = document.getElementById('vGhRow');
+document.getElementById('vGh').textContent = CFG.github.replace(/^https?:\/\//,'');
+ghRow.href = CFG.github;
+document.querySelectorAll('[data-link]').forEach(el=>{
+  const url = CFG.links[el.dataset.link];
+  const st = el.querySelector('[data-st]');
+  if(url){ el.href = url; el.target = "_blank"; el.rel = "noopener";
+           st.textContent = "在线"; st.classList.add('on'); }
+  else { el.classList.add('na'); el.removeAttribute('href'); }
+});
+
+/* ---------- 复制 ---------- */
+function copyTxt(txt, btn){
+  const done = ()=>{ const o = btn.textContent; btn.textContent = "已复制 ✓";
+    setTimeout(()=>btn.textContent = o, 1400); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(()=>fallback());
+  } else fallback();
+  function fallback(){
+    const ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); done(); }catch(e){}
+    document.body.removeChild(ta);
+  }
+}
+document.getElementById('cpEmail').onclick = ()=>copyTxt(CFG.email, document.getElementById('cpEmail'));
+document.getElementById('cpWx').onclick   = ()=>copyTxt(CFG.wechat, document.getElementById('cpWx'));
+
+/* ---------- 启动画面 ---------- */
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){
+    document.getElementById('boot').remove(); return;
+  }
+  const lines = ["> INITIALIZING WYX.CARD ...",
+                 "> LOADING IDENTITY MODULE ... OK",
+                 "> RENDERING INTERFACE ... OK",
+                 "> WELCOME, VISITOR_01"];
+  const pre = document.getElementById('bootTxt');
+  let li = 0, ci = 0, out = "";
+  const cur = '<span class="cur"></span>';
+  (function type(){
+    if(li >= lines.length){
+      setTimeout(()=>{ const b = document.getElementById('boot');
+        b.classList.add('done'); setTimeout(()=>b.remove(), 700); }, 260);
+      return;
+    }
+    const line = lines[li];
+    ci++;
+    if(ci > line.length){
+      out += line + "\n"; li++; ci = 0;
+      pre.innerHTML = out + cur;
+      setTimeout(type, 120);
+      return;
+    }
+    pre.innerHTML = out + line.slice(0, ci) + cur;
+    setTimeout(type, 16);
+  })();
+})();
+
+/* ---------- 实时时钟 ---------- */
+(function(){
+  const el = document.getElementById('clk');
+  const p = n => String(n).padStart(2,'0');
+  (function tick(){ const d = new Date();
+    el.textContent = p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds());
+    setTimeout(tick, 1000); })();
+})();
+
+/* ---------- 滚动进度条 ---------- */
+addEventListener('scroll', ()=>{
+  const h = document.documentElement;
+  document.getElementById('prog').style.width =
+    (h.scrollTop / (h.scrollHeight - h.clientHeight) * 100) + '%';
+}, {passive:true});
+
+/* ---------- 自定义光标 ---------- */
+(function(){
+  if(!matchMedia('(pointer: fine)').matches) return;
+  const dot = document.getElementById('cur'), ring = document.getElementById('curR');
+  let mx = innerWidth/2, my = innerHeight/2, rx = mx, ry = my;
+  addEventListener('mousemove', e=>{ mx = e.clientX; my = e.clientY;
+    dot.style.left = mx+'px'; dot.style.top = my+'px'; });
+  (function loop(){ rx += (mx-rx)*.16; ry += (my-ry)*.16;
+    ring.style.left = rx+'px'; ring.style.top = ry+'px';
+    requestAnimationFrame(loop); })();
+  document.querySelectorAll('a,button,[data-hover]').forEach(el=>{
+    el.addEventListener('mouseenter', ()=>ring.classList.add('big'));
+    el.addEventListener('mouseleave', ()=>ring.classList.remove('big'));
+  });
+})();
+
+/* ---------- 名片 3D 倾斜 ---------- */
+(function(){
+  const card = document.getElementById('idCard');
+  const stage = card.parentElement;
+  stage.addEventListener('mousemove', e=>{
+    const r = stage.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    card.style.transform = `rotateX(${(y-.5)*-14}deg) rotateY(${(x-.5)*16}deg)`;
+    card.style.setProperty('--mx', x*100+'%');
+    card.style.setProperty('--my', y*100+'%');
+  });
+  stage.addEventListener('mouseleave', ()=>{ card.style.transform = ""; });
+})();
+
+/* ---------- 滚动显现 + 数字计数 + 技能条 ---------- */
+(function(){
+  const io = new IntersectionObserver(es=>es.forEach(e=>{
+    if(!e.isIntersecting) return;
+    e.target.classList.add('on');
+    if(e.target.id === 'term') e.target.classList.add('on');
+    io.unobserve(e.target);
+  }), {threshold:.15});
+  document.querySelectorAll('.rv, .term').forEach(el=>io.observe(el));
+
+  const ioNum = new IntersectionObserver(es=>es.forEach(e=>{
+    if(!e.isIntersecting) return;
+    const el = e.target, n = +el.dataset.count, t0 = performance.now();
+    (function up(t){ const p = Math.min((t-t0)/1200, 1);
+      el.textContent = Math.round(n * (1-Math.pow(1-p,3)));
+      if(p < 1) requestAnimationFrame(up); })(t0);
+    ioNum.unobserve(el);
+  }), {threshold:.5});
+  document.querySelectorAll('[data-count]').forEach(el=>ioNum.observe(el));
+})();
+</script>
+</body>
+</html>
